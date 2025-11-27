@@ -15,18 +15,16 @@ class AuthController extends Controller
     {
         // Fix: Log as array
         Log::info('Registration attempt', [
-            'username' => $request->username,
+            'name' => $request->name,
             'email' => $request->email
         ]);
 
         $validator = Validator::make($request->all(), [
-            'username' => 'required|string|min:3|max:255|unique:users,username',
+            'name' => 'required|string|min:3|max:255|unique:users,name',
             'email' => 'required|string|email|max:255|unique:users,email',
             'password' => 'required|string|min:8',
         ], [
-            'username.required' => 'Username is required',
-            'username.unique' => 'This username is already taken',
-            'username.min' => 'Username must be at least 3 characters',
+            'name.required' => 'Name is required',
             'email.required' => 'Email is required',
             'email.email' => 'Please provide a valid email address',
             'email.unique' => 'This email is already registered',
@@ -48,7 +46,7 @@ class AuthController extends Controller
 
         try {
             $user = User::create([
-                'username' => $request->username,
+                'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
@@ -65,7 +63,7 @@ class AuthController extends Controller
                 'data' => [
                     'user' => [
                         'id' => $user->id,
-                        'username' => $user->username,
+                        'name' => $user->name,
                         'email' => $user->email,
                         'created_at' => $user->created_at,
                     ],
@@ -92,17 +90,17 @@ class AuthController extends Controller
     {
         Log::info('Login attempt', [
             'email' => $request->email,
-            'username' => $request->username
+            'name' => $request->name
         ]);
 
-        // Accept either email or username
+        // Accept either email or name
         $validator = Validator::make($request->all(), [
-            'email' => 'required_without:username|email',
-            'username' => 'required_without:email|string',
+            'email' => 'required_without:name|email',
+            'name' => 'required_without:email|string',
             'password' => 'required|string',
         ], [
-            'email.required_without' => 'Please provide either email or username',
-            'username.required_without' => 'Please provide either email or username',
+            'email.required_without' => 'Please provide either email or name',
+            'name.required_without' => 'Please provide either email or name',
             'email.email' => 'Please provide a valid email address',
             'password.required' => 'Password is required',
         ]);
@@ -116,13 +114,13 @@ class AuthController extends Controller
         }
 
         try {
-            // Find user by email or username
+            // Find user by email or name
             $user = null;
             
             if ($request->has('email')) {
                 $user = User::where('email', $request->email)->first();
-            } elseif ($request->has('username')) {
-                $user = User::where('username', $request->username)->first();
+            } elseif ($request->has('name')) {
+                $user = User::where('name', $request->name)->first();
             }
 
             if (!$user || !Hash::check($request->password, $user->password)) {
@@ -146,7 +144,7 @@ class AuthController extends Controller
                 'data' => [
                     'user' => [
                         'id' => $user->id,
-                        'username' => $user->username,
+                        'name' => $user->name,
                         'email' => $user->email,
                     ],
                     'token' => $token,
@@ -202,7 +200,7 @@ class AuthController extends Controller
                 'data' => [
                     'user' => [
                         'id' => $request->user()->id,
-                        'username' => $request->user()->username,
+                        'name' => $request->user()->name,
                         'email' => $request->user()->email,
                         'email_verified_at' => $request->user()->email_verified_at,
                         'created_at' => $request->user()->created_at,
