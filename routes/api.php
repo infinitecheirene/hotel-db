@@ -1,7 +1,29 @@
 <?php
 
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ContactController;
+
+//API Routes
+
+// Public routes
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+// Contact form route (public)
+Route::post('/contact', [ContactController::class, 'store']);
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+    Route::get('/auth/me', [AuthController::class, 'me']);
+    
+    // Contact management routes (admin only)
+    Route::get('/contacts', [ContactController::class, 'index']);
+    Route::get('/contacts/{id}', [ContactController::class, 'show']);
+    Route::patch('/contacts/{id}/status', [ContactController::class, 'updateStatus']);
+    Route::delete('/contacts/{id}', [ContactController::class, 'destroy']);
+});
 
 // Test route
 Route::get('/test', function () {
