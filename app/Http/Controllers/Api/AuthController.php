@@ -91,12 +91,20 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         Log::info('Login attempt', [
-            'email' => $request->email
+            'email' => $request->email,
+            'username' => $request->username
         ]);
 
+        // Accept either email or username
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
+            'email' => 'required_without:username|email',
+            'username' => 'required_without:email|string',
             'password' => 'required|string',
+        ], [
+            'email.required_without' => 'Please provide either email or username',
+            'username.required_without' => 'Please provide either email or username',
+            'email.email' => 'Please provide a valid email address',
+            'password.required' => 'Password is required',
         ]);
 
         if ($validator->fails()) {
@@ -108,7 +116,14 @@ class AuthController extends Controller
         }
 
         try {
-            $user = User::where('email', $request->email)->first();
+            // Find user by email or username
+            $user = null;
+            
+            if ($request->has('email')) {
+                $user = User::where('email', $request->email)->first();
+            } elseif ($request->has('username')) {
+                $user = User::where('username', $request->username)->first();
+            }
 
             if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
@@ -117,6 +132,7 @@ class AuthController extends Controller
                 ], 401);
             }
 
+            // Delete old tokens and create new one
             $user->tokens()->delete();
             $token = $user->createToken('auth_token')->plainTextToken;
 
