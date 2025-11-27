@@ -3,8 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\Api\RoomController;
+use App\Http\Controllers\Api\BookingController;
 
-//API Routes
+// USER AUTHENTICATION API ROUTES
 
 // Public routes
 Route::post('/auth/register', [AuthController::class, 'register']);
@@ -25,6 +27,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/contacts/{id}', [ContactController::class, 'destroy']);
 });
 
+// CONTACT FORM API ROUTES
+
 // Test route
 Route::get('/test', function () {
     return response()->json([
@@ -42,3 +46,4 @@ Route::get('/contacts', [ContactController::class, 'index']);
 Route::get('/contacts/{contact}', [ContactController::class, 'show']);
 Route::patch('/contacts/{contact}/status/{status}', [ContactController::class, 'updateStatus']);
 Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
+
