@@ -47,3 +47,28 @@ Route::get('/contacts/{contact}', [ContactController::class, 'show']);
 Route::patch('/contacts/{contact}/status/{status}', [ContactController::class, 'updateStatus']);
 Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
 
+// ROOM AND BOOKING MANAGEMENT API ROUTES
+
+// Room routes (public read access)
+Route::get('/rooms', [RoomController::class, 'index']);
+Route::get('/rooms/{id}', [RoomController::class, 'show']);
+Route::post('/rooms/{id}/check-availability', [RoomController::class, 'checkAvailability']);
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth routes
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+
+    // Booking routes
+    Route::get('/bookings', [BookingController::class, 'index']);
+    Route::post('/bookings', [BookingController::class, 'store']);
+    Route::get('/bookings/{id}', [BookingController::class, 'show']);
+    Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+    Route::patch('/bookings/{id}/status', [BookingController::class, 'updateStatus']);
+
+    // Admin room management routes
+    Route::post('/rooms', [RoomController::class, 'store']);
+    Route::put('/rooms/{id}', [RoomController::class, 'update']);
+    Route::delete('/rooms/{id}', [RoomController::class, 'destroy']);
+});
