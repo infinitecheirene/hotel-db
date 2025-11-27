@@ -8,58 +8,37 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
-    /**
-     * Register a new user
-     */
     public function register(Request $request)
     {
-        // Log the incoming request
+        // Fix: Log as array
         Log::info('Registration attempt', [
             'username' => $request->username,
             'email' => $request->email
         ]);
 
-        // Validate the request
         $validator = Validator::make($request->all(), [
-            'username' => [
-                'required',
-                'string',
-                'min:3',
-                'max:255',
-                'unique:users,username',
-                'regex:/^[a-zA-Z0-9_-]+$/', // Only alphanumeric, underscore, and dash
-            ],
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'max:255',
-                'unique:users,email',
-            ],
-            'password' => [
-                'required',
-                'string',
-                Password::min(8)
-                    ->mixedCase()
-                    ->numbers()
-                    ->symbols()
-                    ->uncompromised(),
-            ],
+            'username' => 'required|string|min:3|max:255|unique:users,username',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'password' => 'required|string|min:8',
         ], [
             'username.required' => 'Username is required',
             'username.unique' => 'This username is already taken',
-            'username.regex' => 'Username can only contain letters, numbers, underscores, and dashes',
+            'username.min' => 'Username must be at least 3 characters',
             'email.required' => 'Email is required',
-            'email.unique' => 'This email is already registered',
             'email.email' => 'Please provide a valid email address',
+            'email.unique' => 'This email is already registered',
             'password.required' => 'Password is required',
+            'password.min' => 'Password must be at least 8 characters',
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed', [
+                'errors' => $validator->errors()->toArray()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -68,17 +47,17 @@ class AuthController extends Controller
         }
 
         try {
-            // Create the user
             $user = User::create([
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
             ]);
 
-            // Create authentication token
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            Log::info('User registered successfully', ['user_id' => $user->id]);
+            Log::info('User registered successfully', [
+                'user_id' => $user->id
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -96,7 +75,8 @@ class AuthController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Registration error: ' . $e->getMessage(), [
+            Log::error('Registration error', [
+                'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
             
@@ -108,15 +88,12 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Login user
-     */
     public function login(Request $request)
     {
-        // Log the login attempt
-        Log::info('Login attempt', ['email' => $request->email]);
+        Log::info('Login attempt', [
+            'email' => $request->email
+        ]);
 
-        // Validate the request
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string',
@@ -131,10 +108,8 @@ class AuthController extends Controller
         }
 
         try {
-            // Find user by email
             $user = User::where('email', $request->email)->first();
 
-            // Check if user exists and password is correct
             if (!$user || !Hash::check($request->password, $user->password)) {
                 return response()->json([
                     'success' => false,
@@ -142,13 +117,12 @@ class AuthController extends Controller
                 ], 401);
             }
 
-            // Delete old tokens
             $user->tokens()->delete();
-
-            // Create new token
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            Log::info('User logged in successfully', ['user_id' => $user->id]);
+            Log::info('User logged in successfully', [
+                'user_id' => $user->id
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -165,7 +139,9 @@ class AuthController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Login error: ' . $e->getMessage());
+            Log::error('Login error', [
+                'message' => $e->getMessage()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -175,16 +151,14 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Logout user
-     */
     public function logout(Request $request)
     {
         try {
-            // Delete current token
             $request->user()->currentAccessToken()->delete();
 
-            Log::info('User logged out', ['user_id' => $request->user()->id]);
+            Log::info('User logged out', [
+                'user_id' => $request->user()->id
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -192,7 +166,9 @@ class AuthController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Logout error: ' . $e->getMessage());
+            Log::error('Logout error', [
+                'message' => $e->getMessage()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -202,9 +178,6 @@ class AuthController extends Controller
         }
     }
 
-    /**
-     * Get authenticated user
-     */
     public function me(Request $request)
     {
         try {
@@ -222,7 +195,9 @@ class AuthController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Get user error: ' . $e->getMessage());
+            Log::error('Get user error', [
+                'message' => $e->getMessage()
+            ]);
             
             return response()->json([
                 'success' => false,

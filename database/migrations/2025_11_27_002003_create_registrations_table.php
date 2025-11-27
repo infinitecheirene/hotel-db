@@ -8,7 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Check if users table doesn't exist (Laravel usually creates it by default)
         if (!Schema::hasTable('users')) {
             Schema::create('users', function (Blueprint $table) {
                 $table->id();
@@ -23,7 +22,6 @@ return new class extends Migration
                 $table->index('username');
             });
         } else {
-            // If users table exists, add username column if it doesn't exist
             Schema::table('users', function (Blueprint $table) {
                 if (!Schema::hasColumn('users', 'username')) {
                     $table->string('username')->unique()->after('id');
