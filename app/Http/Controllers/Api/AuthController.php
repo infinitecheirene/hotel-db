@@ -203,6 +203,8 @@ class AuthController extends Controller
 
             $token = $user->createToken('auth_token')->plainTextToken;
 
+            $cookie = cookie('auth_token', $token, 60*24); // 1 day
+
             Log::info('User Logged In successfully', [
                 'user_id' => $user->id
             ]);

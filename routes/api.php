@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\RoomController;
 
 // USER AUTHENTICATION API ROUTES
 
@@ -28,16 +30,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // CONTACT FORM API ROUTES
-
-// Test route
-Route::get('/test', function () {
-    return response()->json([
-        'status' => 'ok',
-        'message' => 'API is working!',
-        'timestamp' => now()->toISOString(),
-    ]);
-});
-
 // Contact form submission - MUST be POST
 Route::post('/contact', [ContactController::class, 'store']);
 
@@ -48,3 +40,9 @@ Route::patch('/contacts/{contact}/status/{status}', [ContactController::class, '
 Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']);
 
 // ROOM AND BOOKING MANAGEMENT API ROUTES
+Route::get('/rooms', [RoomController::class, 'index']);
+Route::get('/rooms/{id}', [RoomController::class, 'show']);
+Route::post('/rooms', [RoomController::class, 'store']);
+Route::middleware(['auth:sanctum'])->get('/rooms', function () {
+    return \App\Models\Room::all();
+});
