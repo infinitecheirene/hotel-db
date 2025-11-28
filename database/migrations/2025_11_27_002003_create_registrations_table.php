@@ -8,10 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('users')) {
-            Schema::create('users', function (Blueprint $table) {
+        if (!Schema::hasTable('registration')) {
+            Schema::create('registration', function (Blueprint $table) {
                 $table->id();
-                $table->string('username')->unique();
+                $table->string('name')->unique();
                 $table->string('email')->unique();
                 $table->string('password');
                 $table->timestamp('email_verified_at')->nullable();
@@ -19,13 +19,13 @@ return new class extends Migration
                 $table->timestamps();
                 
                 $table->index('email');
-                $table->index('username');
+                $table->index('name');
             });
         } else {
-            Schema::table('users', function (Blueprint $table) {
-                if (!Schema::hasColumn('users', 'username')) {
-                    $table->string('username')->unique()->after('id');
-                    $table->index('username');
+            Schema::table('registration', function (Blueprint $table) {
+                if (!Schema::hasColumn('registration', 'name')) {
+                    $table->string('name')->unique()->after('id');
+                    $table->index('name');
                 }
             });
         }
@@ -33,6 +33,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('users');
+        Schema::dropIfExists('registration');
     }
 };

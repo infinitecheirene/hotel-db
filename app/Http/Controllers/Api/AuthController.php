@@ -8,6 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookies;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
+
 
 class AuthController extends Controller
 {
@@ -88,82 +92,44 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        Log::info('Login attempt', [
-            'email' => $request->email,
-            'name' => $request->name
-        ]);
-
-        // Accept either email or name
-        $validator = Validator::make($request->all(), [
-            'email' => 'required_without:name|email',
-            'name' => 'required_without:email|string',
-            'password' => 'required|string',
-        ], [
-            'email.required_without' => 'Please provide either email or name',
-            'name.required_without' => 'Please provide either email or name',
-            'email.email' => 'Please provide a valid email address',
-            'password.required' => 'Password is required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
         try {
-            // Find user by email or name
-            $user = null;
-            
-            if ($request->has('email')) {
-                $user = User::where('email', $request->email)->first();
-            } elseif ($request->has('name')) {
-                $user = User::where('name', $request->name)->first();
-            }
-
-            if (!$user || !Hash::check($request->password, $user->password)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid credentials',
-                ], 401);
-            }
-
-            // Delete old tokens and create new one
-            $user->tokens()->delete();
-            $token = $user->createToken('auth_token')->plainTextToken;
-
-            Log::info('User logged in successfully', [
-                'user_id' => $user->id
+            // Validate input
+            $request->validate([
+                'identifier' => 'required|string',
+                'password' => 'required|string'
             ]);
 
+            $identifier = $request->identifier;
+            $password = $request->password;
+
+            // Determine whether identifier is email or username
+            $field = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
+
+            // Find user using email OR name
+            $user = User::where($field, $identifier)->first();
+
+            // Validate password
+            if (!$user || !Hash::check($password, $user->password)) {
+                return response()->json(['message' => 'Invalid name/email or password'], 401);
+            }
+
+            // Create token
+            $token = $user->createToken('api')->plainTextToken;
+
             return response()->json([
-                'success' => true,
-                'message' => 'Login successful! Welcome back.',
-                'data' => [
-                    'user' => [
-                        'id' => $user->id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                    ],
-                    'token' => $token,
-                    'token_type' => 'Bearer',
-                ]
+                'user' => $user,
+                'token' => $token
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Login error', [
-                'message' => $e->getMessage()
-            ]);
-            
+
             return response()->json([
-                'success' => false,
-                'message' => 'Login failed. Please try again.',
-                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+                'error' => $e->getMessage()
             ], 500);
+
         }
     }
+
 
     public function logout(Request $request)
     {
@@ -217,6 +183,45 @@ class AuthController extends Controller
                 'success' => false,
                 'message' => 'Failed to get user information',
                 'error' => config('app.debug') ? $e->getMessage() : 'Internal server error'
+            ], 500);
+        }
+    }
+
+    public function TokenSession (Request $request) {
+        $validateData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:name,email',
+            'password' => 'required|string|min:8',
+        ]);
+
+        try {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            Log::info('User Logged In successfully', [
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Log In successful',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Log In failed', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Log In failed. Please try again later.'
             ], 500);
         }
     }
