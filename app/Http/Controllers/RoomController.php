@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Room;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Http\RedirectResponse;
-use App\Models\Rooms;
 
 class RoomController extends Controller
 {
-    public function index()
+    public function show($id)
     {
-        $rooms = Rooms::all();
-        return response()->json($rooms);
+        $room = Room::find($id);
+
+        if (!$room) {
+            return response()->json(['message' => 'Room not found'], 404);
+        }
+
+        return response()->json($room);
     }
 }
